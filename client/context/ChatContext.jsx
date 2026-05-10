@@ -159,13 +159,35 @@ export const ChatProvider = ({ children }) => {
 
     const callUser = async (userId) => {
         try {
+            // 🔥 RESET OLD STATE FIRST (VERY IMPORTANT)
+            setCall({});
+            setCallAccepted(false);
+            setCallEnded(false);
+
+            stopRingtone();
+
+            if (callTimeoutRef.current) {
+                clearTimeout(callTimeoutRef.current);
+            }
+
+            if (connectionRef.current) {
+                connectionRef.current.destroy();
+                connectionRef.current = null;
+            }
+
+            // 🎤 get audio
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: true
             });
 
+            setStream(stream);
+
+            // 🔊 start ringtone
             ringtone.current.loop = true;
+            ringtone.current.currentTime = 0;
             ringtone.current.play().catch(err => console.log(err));
 
+            // ⏰ timeout
             callTimeoutRef.current = setTimeout(() => {
                 console.log("Call timeout ⏰");
 
@@ -176,18 +198,18 @@ export const ChatProvider = ({ children }) => {
                 endCall();
             }, 30000);
 
-            setStream(stream);
-
             setCall({
                 isCalling: true,
                 from: authUser._id,
                 to: userId
             });
 
+            // 🎧 attach local stream
             if (myAudio.current) {
                 myAudio.current.srcObject = stream;
             }
 
+            // 🔗 peer connection
             const peer = new Peer({
                 initiator: true,
                 trickle: false,
@@ -218,7 +240,7 @@ export const ChatProvider = ({ children }) => {
 
     const answerCall = async () => {
         setCallAccepted(true);
-
+        setCallEnded(false);
         stopRingtone();
 
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -258,24 +280,38 @@ export const ChatProvider = ({ children }) => {
     };
 
     const endCall = () => {
+        console.log("Call ended");
 
+        // stop ringtone
+        stopRingtone();
+
+        // clear timer
         if (callTimeoutRef.current) {
             clearTimeout(callTimeoutRef.current);
         }
 
-        stopRingtone();
-        setCallEnded(true);
+        // destroy connection
+        if (connectionRef.current) {
+            connectionRef.current.destroy();
+            connectionRef.current = null;
+        }
 
-        connectionRef.current?.destroy();
+        // stop media stream
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
 
-        socket.emit("endCall", { to: call?.from || call?.to });
+        if (call?.to) {
+            socket.emit("endCall", { to: call.to });
+        } else if (call?.from) {
+            socket.emit("endCall", { to: call.from });
+        }
 
+        // 🔥 RESET EVERYTHING
         setCall({});
         setCallAccepted(false);
+        setCallEnded(false);   
         setCallTime(0);
-
-        // stop mic
-        stream?.getTracks().forEach(track => track.stop());
     };
 
     const formatTime = (seconds) => {
@@ -334,22 +370,29 @@ export const ChatProvider = ({ children }) => {
             }
         });
 
-        socket.on("callEnded", () => {
+        socket.on("endCall", () => {
+            console.log("Other user ended call");
+
+            stopRingtone();
+
             if (callTimeoutRef.current) {
                 clearTimeout(callTimeoutRef.current);
             }
 
-            setCallEnded(true);
+            if (connectionRef.current) {
+                connectionRef.current.destroy();
+                connectionRef.current = null;
+            }
 
-            stopRingtone();
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
 
-            connectionRef.current?.destroy();
-
+            // 🔥 RESET UI
             setCall({});
             setCallAccepted(false);
+            setCallEnded(false);
             setCallTime(0);
-
-            stream?.getTracks().forEach(track => track.stop());
         });
 
         socket.on("callTimeout", () => {
@@ -357,13 +400,26 @@ export const ChatProvider = ({ children }) => {
 
             stopRingtone();
 
+            if (connectionRef.current) {
+                connectionRef.current.destroy();
+                connectionRef.current = null;
+            }
+
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
             setCall({});
+            setCallAccepted(false);
+            setCallEnded(false);
         });
+
+        // ++++++++++++++++++++++++++++++++
 
         return () => {
             socket.off("incomingCall");
             socket.off("callAccepted");
-            socket.off("callEnded");
+            socket.off("endCall");
         };
 
     }, [socket]);

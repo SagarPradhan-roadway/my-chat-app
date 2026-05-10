@@ -7,11 +7,11 @@ import userRouter from "./routes/userRoutes.js";
 import messageRouter from "./routes/messageRoutes.js";
 import { Server } from "socket.io";
 
-//create Express app and HTTp server
+//create Express app and HTTP server
 const app = express();
 const server = http.createServer(app)
 
-//Initialize socket.io sserver
+//Initialize socket.io server
 export const io = new Server(server, {
     cors: {origin: "*"}
 })
@@ -34,7 +34,6 @@ io.on("connection", (socket) => {
         
     });
 
-    // ++++++++++++++++++++++++++++++++++++
     // CALL FEATURE SOCKET EVENTS
     socket.on("callUser", ({ userToCall, signalData, from, name }) => {
         console.log("CALL FROM:", from, "TO:", userToCall);
@@ -64,12 +63,10 @@ io.on("connection", (socket) => {
     socket.on("endCall", ({ to }) => {
         const receiverSocketId = userSocketMap[to];
         if (receiverSocketId) {
-            io.to(receiverSocketId).emit("callEnded");
+            io.to(receiverSocketId).emit("endCall"); 
         }
     });
-    // ++++++++++++++++++++++++++++++++++++
-    
-})
+});
 
 
 //Middleware setup
