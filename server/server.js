@@ -51,7 +51,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("callTimeout", ({ to }) => {
-        io.to(userSocketMap[to]).emit("callEnded");
+        io.to(userSocketMap[to]).emit("callTimeout");
     });
 
     socket.on("answerCall", ({ to, signal }) => {

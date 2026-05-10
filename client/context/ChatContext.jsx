@@ -260,8 +260,8 @@ export const ChatProvider = ({ children }) => {
     const endCall = () => {
 
         if (callTimeoutRef.current) {
-                clearTimeout(callTimeoutRef.current);
-            }
+            clearTimeout(callTimeoutRef.current);
+        }
 
         stopRingtone();
         setCallEnded(true);
@@ -272,6 +272,7 @@ export const ChatProvider = ({ children }) => {
 
         setCall({});
         setCallAccepted(false);
+        setCallTime(0);
 
         // stop mic
         stream?.getTracks().forEach(track => track.stop());
@@ -299,7 +300,10 @@ export const ChatProvider = ({ children }) => {
             ringtone.current.loop = true;
             ringtone.current.play().catch(() => {});
 
-            setSelectedUser({ _id: from, fullName: name });
+            const user = users.find(u => u._id === from);
+            if (user) {
+                setSelectedUser(user);
+            }
 
             setCall({
                 isReceivingCall: true,
@@ -346,6 +350,14 @@ export const ChatProvider = ({ children }) => {
             setCallTime(0);
 
             stream?.getTracks().forEach(track => track.stop());
+        });
+
+        socket.on("callTimeout", () => {
+            console.log("Call timeout received");
+
+            stopRingtone();
+
+            setCall({});
         });
 
         return () => {
