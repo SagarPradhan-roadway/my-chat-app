@@ -1,8 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { AuthContext } from "./AuthContext";
 import toast from "react-hot-toast";
-import Peer from "simple-peer";
-
+import Peer from "simple-peer/simplepeer.min.js";
 
 
 export const ChatContext = createContext();
@@ -14,21 +13,20 @@ export const ChatProvider = ({ children }) => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [unseenMessages, setUnseenMessages] = useState({});
 
-    // +++++++++++++++++++++++++++++
     const [call, setCall] = useState({});
     const [callAccepted, setCallAccepted] = useState(false);
     const [callEnded, setCallEnded] = useState(false);
     const [stream, setStream] = useState(null);
     const [callTime, setCallTime] = useState(0);
-    // ++++++++++++++++++++++++++++++
 
     const {socket, axios, authUser} = useContext(AuthContext);
 
-    // ++++++++++++++++++++
     const myAudio = useRef();
     const userAudio = useRef();
     const connectionRef = useRef();
-    // ++++++++++++++++++++++
+
+    const ringtone = useRef(null);
+    const callTimeoutRef = useRef(null);
 
     //function to get all users for sidebar
     const getUsers = async () => {
@@ -74,7 +72,10 @@ export const ChatProvider = ({ children }) => {
         if (!socket) return;
 
         socket.on("newMessage", (newMessage)=>{
-            if (selectedUser && newMessage.senderId === selectedUser._id){
+            if (selectedUser && (
+                (newMessage.senderId === selectedUser._id && newMessage.receiverId === authUser._id) ||
+                (newMessage.senderId === authUser._id && newMessage.receiverId === selectedUser._id)
+            )){
                 newMessage.seen = true;
                 setMessages((prevmessages)=>[...prevmessages, newMessage]);
                 axios.put(`/api/messages/mark/${newMessage._id}`);
@@ -122,7 +123,7 @@ export const ChatProvider = ({ children }) => {
                             if (forEveryone) {
                                 return { ...msg, isDeleted: true, text: "", image: "" };
                             } else {
-                                return null; // For "delete for me", we remove it locally
+                                return null;
                             }
                         }
                         return msg;
@@ -136,7 +137,13 @@ export const ChatProvider = ({ children }) => {
         }
     };
 
-    // +++++++++++++++++++++++++++++++
+
+    const stopRingtone = () => {
+        if (ringtone.current) {
+            ringtone.current.pause();
+            ringtone.current.currentTime = 0;
+        }
+    };
 
     const getMedia = async () => {
         const currentStream = await navigator.mediaDevices.getUserMedia({
@@ -156,9 +163,21 @@ export const ChatProvider = ({ children }) => {
                 audio: true
             });
 
+            ringtone.current.loop = true;
+            ringtone.current.play().catch(err => console.log(err));
+
+            callTimeoutRef.current = setTimeout(() => {
+                console.log("Call timeout ⏰");
+
+                stopRingtone();
+
+                socket.emit("callTimeout", { to: userId });
+
+                endCall();
+            }, 30000);
+
             setStream(stream);
 
-            // ✅ ADD THIS (VERY IMPORTANT)
             setCall({
                 isCalling: true,
                 from: authUser._id,
@@ -185,7 +204,9 @@ export const ChatProvider = ({ children }) => {
             });
 
             peer.on("stream", (remoteStream) => {
-                userAudio.current.srcObject = remoteStream;
+                if (userAudio.current) {
+                    userAudio.current.srcObject = remoteStream;
+                }
             });
 
             connectionRef.current = peer;
@@ -197,6 +218,8 @@ export const ChatProvider = ({ children }) => {
 
     const answerCall = async () => {
         setCallAccepted(true);
+
+        stopRingtone();
 
         const stream = await navigator.mediaDevices.getUserMedia({
             audio: true
@@ -222,7 +245,9 @@ export const ChatProvider = ({ children }) => {
         });
 
         peer.on("stream", (remoteStream) => {
-            userAudio.current.srcObject = remoteStream;
+            if (userAudio.current) {
+                userAudio.current.srcObject = remoteStream;
+            }
         });
 
         if (call?.signal) {
@@ -233,16 +258,20 @@ export const ChatProvider = ({ children }) => {
     };
 
     const endCall = () => {
+
+        if (callTimeoutRef.current) {
+                clearTimeout(callTimeoutRef.current);
+            }
+
+        stopRingtone();
         setCallEnded(true);
 
         connectionRef.current?.destroy();
 
-        socket.emit("endCall", { to: call?.from });
+        socket.emit("endCall", { to: call?.from || call?.to });
 
-        // ✅ RESET EVERYTHING
         setCall({});
         setCallAccepted(false);
-        setCallEnded(false);
 
         // stop mic
         stream?.getTracks().forEach(track => track.stop());
@@ -254,7 +283,7 @@ export const ChatProvider = ({ children }) => {
 
         return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
     };
-    // ++++++++++++++++++++++++++++++
+
 
 
     useEffect(() => {
@@ -262,12 +291,16 @@ export const ChatProvider = ({ children }) => {
         return ()=> unsubscriibeFromMesssages();
     },[socket, selectedUser]);
 
-    // +++++++++++++++++++++++++++
     useEffect(() => {
         if (!socket) return;
 
         socket.on("incomingCall", ({ from, signal, name }) => {
+
+            ringtone.current.loop = true;
+            ringtone.current.play().catch(() => {});
+
             setSelectedUser({ _id: from, fullName: name });
+
             setCall({
                 isReceivingCall: true,
                 from,
@@ -277,8 +310,20 @@ export const ChatProvider = ({ children }) => {
         });
 
         socket.on("callAccepted", (signal) => {
+
+            if (callTimeoutRef.current) {
+                clearTimeout(callTimeoutRef.current);
+            }
+
+            stopRingtone();
             setCallAccepted(true);
             setCallTime(0);
+
+            setCall(prev => ({
+                ...prev,
+                isCalling: false,
+                isInCall: true
+            }));
 
             if (connectionRef.current) {
                 connectionRef.current.signal(signal);
@@ -286,9 +331,21 @@ export const ChatProvider = ({ children }) => {
         });
 
         socket.on("callEnded", () => {
+            if (callTimeoutRef.current) {
+                clearTimeout(callTimeoutRef.current);
+            }
+
             setCallEnded(true);
+
+            stopRingtone();
+
             connectionRef.current?.destroy();
+
+            setCall({});
+            setCallAccepted(false);
             setCallTime(0);
+
+            stream?.getTracks().forEach(track => track.stop());
         });
 
         return () => {
@@ -298,6 +355,12 @@ export const ChatProvider = ({ children }) => {
         };
 
     }, [socket]);
+
+    useEffect(() => {
+        if (selectedUser?._id) {
+            getMessages(selectedUser._id);
+        }
+    }, [selectedUser]);
 
     useEffect(() => {
         let interval;
@@ -310,7 +373,10 @@ export const ChatProvider = ({ children }) => {
 
         return () => clearInterval(interval);
     }, [callAccepted, callEnded]);
-    // ++++++++++++++++++++++++++
+
+    useEffect(() => {
+        ringtone.current = new Audio("/ringtone.mp3");
+    }, []);
 
     const value = {
         messages,
