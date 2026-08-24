@@ -4,6 +4,8 @@ import { formatmessageTime } from "../lib/utils";
 import { ChatContext } from "../../context/ChatContext";
 import { AuthContext } from "../../context/AuthContext";
 import toast from "react-hot-toast";
+import SmartReplyButton from "./SmartReplyButton";
+import { MdKeyboardArrowDown } from "react-icons/md";
 
 const ChatContainer = () => {
 
@@ -30,6 +32,7 @@ const ChatContainer = () => {
   const scrollEnd = useRef();
 
   const [input, setInput] = useState('');
+  const [openDropdown, setOpenDropdown] = useState(null);
 
   
   //handle sending a message
@@ -108,15 +111,47 @@ const ChatContainer = () => {
                   msg.senderId !== authUser._id && "flex-row-reverse"
                 }`}
               >
-                {/* Delete Menu (visible on hover) */}
-                <div className="absolute -top-2 group-hover:flex hidden right-0 flex-col gap-1 bg-[#D5BDAF] text-[#3C1F0D] rounded shadow z-10 text-xs px-2 py-1">
-                  {/* Delete for Me */}
-                  <button onClick={() => deleteMessage(msg._id, false)}>Delete for Me</button>
-                  {/* Delete for Everyone (only if sender) */}
-                  {msg.senderId === authUser._id && (
-                    <button onClick={() => deleteMessage(msg._id, true)}>Delete for Everyone</button>
-                  )}
+                {/* Dropdown Chevron (visible on hover) */}
+                <div 
+                  onClick={() => setOpenDropdown(openDropdown === msg._id ? null : msg._id)}
+                  className={`absolute top-0 right-0 cursor-pointer text-[#8C7B6E] hidden group-hover:block z-10 p-1 bg-gradient-to-bl from-[#EDE0D4]/80 to-transparent rounded-bl-lg`}
+                >
+                  <MdKeyboardArrowDown size={20} />
                 </div>
+
+                {/* WhatsApp-Style Dropdown Menu */}
+                {openDropdown === msg._id && (
+                  <>
+                    {/* Invisible Overlay to handle outside clicks */}
+                    <div 
+                      className="fixed inset-0 z-20" 
+                      onClick={() => setOpenDropdown(null)}
+                    ></div>
+                    
+                    <div className="absolute top-5 right-0 flex-col gap-1 bg-[#D5BDAF] text-[#3C1F0D] rounded shadow-lg z-30 text-xs py-1 min-w-max border border-[#C2A58B]">
+                      <button 
+                        className="w-full text-left px-3 py-2 hover:bg-[#C2A58B] transition-colors whitespace-nowrap"
+                        onClick={() => {
+                          deleteMessage(msg._id, false);
+                          setOpenDropdown(null);
+                        }}
+                      >
+                        Delete for Me
+                      </button>
+                      {msg.senderId === authUser._id && (
+                        <button 
+                          className="w-full text-left px-3 py-2 hover:bg-[#C2A58B] transition-colors whitespace-nowrap"
+                          onClick={() => {
+                            deleteMessage(msg._id, true);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          Delete for Everyone
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 {/* Show image or text unless deleted */}
                 {msg.isDeleted ? (
@@ -159,8 +194,14 @@ const ChatContainer = () => {
 
           {/*---------------- bottom area -------------- */}
 
-          <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 p-3">
-            <div className="flex-1 flex items-center bg-[#E3D5CA] px-3 rounded-full border border-[#C2A58B]">
+          {/*---------------- bottom area -------------- */}
+
+          <div className="absolute bottom-0 left-0 right-0 flex flex-col gap-2 p-3 bg-gradient-to-t from-[#EDE0D4] to-transparent">
+            <SmartReplyButton 
+                selectedUserId={selectedUser._id} 
+                onSelectSuggestion={(suggestion) => setInput(suggestion)} 
+            />
+            <div className="w-full flex items-center bg-[#E3D5CA] px-3 rounded-full border border-[#C2A58B]">
               <input onChange={(e)=> setInput(e.target.value)} value={input} onKeyDown={(e)=> e.key === "Enter" ? handleSendMessage(e) : null} type="text" placeholder="Send a message" className="flex-1 text-sm p-3 border-none rounded-lg outline-none text-[#3C1F0D] placeholder-[#8C7B6E] bg-transparent"/>
               <input onChange={handleSendImage} type="file" id="image" accept="image/png, image/jpg" hidden/>
               <label htmlFor="image">
