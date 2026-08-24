@@ -4,6 +4,8 @@ import { formatmessageTime } from "../lib/utils";
 import { ChatContext } from "../../context/ChatContext";
 import { AuthContext } from "../../context/AuthContext";
 import toast from "react-hot-toast";
+import SmartReplyButton from "./SmartReplyButton";
+import { MdKeyboardArrowDown } from "react-icons/md";
 
 const ChatContainer = () => {
 
@@ -30,6 +32,7 @@ const ChatContainer = () => {
   const scrollEnd = useRef();
 
   const [input, setInput] = useState('');
+  const [openDropdown, setOpenDropdown] = useState(null);
 
   
   //handle sending a message
@@ -71,11 +74,11 @@ const ChatContainer = () => {
   return (
       <>
         {selectedUser ? (
-        <div className="h-full overflow-scroll relative backdrop-blur-lg">
+        <div className="h-full overflow-scroll relative bg-[#EDE0D4]">
           {/*--------header--------- */}
-          <div className="flex items-center gap-3 py-3 mx-4 border-b border-stone-500">
-            <img src={selectedUser.profilePic || assets.avatar_icon} alt="" className="w-8 rounded-full" />
-            <p className="flex-1 text-lg text-white flex items-center gap-2">
+          <div className="flex items-center gap-3 py-3 mx-4 border-b border-[#C2A58B]">
+            <img src={selectedUser.profilePic || assets.avatar_icon} alt="" className={`w-8 rounded-full ${!selectedUser.profilePic && 'sepia opacity-70'}`} />
+            <p className="flex-1 text-lg text-[#3C1F0D] flex items-center gap-2">
               {selectedUser.fullName}
               {onlineUsers.includes(selectedUser._id) && <span className="w-2 h-2 rounded-full bg-green-500"></span>}
             </p>
@@ -108,27 +111,59 @@ const ChatContainer = () => {
                   msg.senderId !== authUser._id && "flex-row-reverse"
                 }`}
               >
-                {/* Delete Menu (visible on hover) */}
-                <div className="absolute -top-2 group-hover:flex hidden right-0 flex-col gap-1 bg-white text-black rounded shadow z-10 text-xs px-2 py-1">
-                  {/* Delete for Me */}
-                  <button onClick={() => deleteMessage(msg._id, false)}>Delete for Me</button>
-                  {/* Delete for Everyone (only if sender) */}
-                  {msg.senderId === authUser._id && (
-                    <button onClick={() => deleteMessage(msg._id, true)}>Delete for Everyone</button>
-                  )}
+                {/* Dropdown Chevron (visible on hover) */}
+                <div 
+                  onClick={() => setOpenDropdown(openDropdown === msg._id ? null : msg._id)}
+                  className={`absolute top-0 right-0 cursor-pointer text-[#8C7B6E] hidden group-hover:block z-10 p-1 bg-gradient-to-bl from-[#EDE0D4]/80 to-transparent rounded-bl-lg`}
+                >
+                  <MdKeyboardArrowDown size={20} />
                 </div>
+
+                {/* WhatsApp-Style Dropdown Menu */}
+                {openDropdown === msg._id && (
+                  <>
+                    {/* Invisible Overlay to handle outside clicks */}
+                    <div 
+                      className="fixed inset-0 z-20" 
+                      onClick={() => setOpenDropdown(null)}
+                    ></div>
+                    
+                    <div className="absolute top-5 right-0 flex-col gap-1 bg-[#D5BDAF] text-[#3C1F0D] rounded shadow-lg z-30 text-xs py-1 min-w-max border border-[#C2A58B]">
+                      <button 
+                        className="w-full text-left px-3 py-2 hover:bg-[#C2A58B] transition-colors whitespace-nowrap"
+                        onClick={() => {
+                          deleteMessage(msg._id, false);
+                          setOpenDropdown(null);
+                        }}
+                      >
+                        Delete for Me
+                      </button>
+                      {msg.senderId === authUser._id && (
+                        <button 
+                          className="w-full text-left px-3 py-2 hover:bg-[#C2A58B] transition-colors whitespace-nowrap"
+                          onClick={() => {
+                            deleteMessage(msg._id, true);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          Delete for Everyone
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 {/* Show image or text unless deleted */}
                 {msg.isDeleted ? (
-                  <p className="text-xs italic text-gray-400 mb-8">This message was deleted</p>
+                  <p className="text-xs italic text-[#8C7B6E] mb-8">This message was deleted</p>
                 ) : msg.image ? (
-                  <img src={msg.image} alt="" className="max-w-[230px] border border-gray-700 rounded-lg overflow-hidden mb-8" />
+                  <img src={msg.image} alt="" className="max-w-[230px] border border-[#C2A58B] rounded-lg overflow-hidden mb-8" />
                 ) : (
                   <p
-                    className={`p-2 max-w-[200px] md:text-sm font-light rounded-lg mb-8 break-all bg-violet-500/30 text-white ${
+                    className={`p-2 max-w-[200px] md:text-sm font-light rounded-lg mb-8 break-all text-[#3C1F0D] ${
                       msg.senderId === authUser._id
-                        ? "rounded-br-none"
-                        : "rounded-bl-none"
+                        ? "rounded-br-none bg-[#C4875A]"
+                        : "rounded-bl-none bg-[#F5EFE6]"
                     }`}
                   >
                     {msg.text}
@@ -144,7 +179,7 @@ const ChatContainer = () => {
                         : selectedUser?.profilePic || assets.avatar_icon
                     }
                     alt=""
-                    className="w-7 rounded-full"
+                    className={`w-7 rounded-full ${((msg.senderId === authUser._id && !authUser?.profilePic) || (msg.senderId !== authUser._id && !selectedUser?.profilePic)) && 'sepia opacity-70'}`}
                   />
                   <p className="text-gray-500">
                     {formatmessageTime(msg.createdAt)}
@@ -159,9 +194,15 @@ const ChatContainer = () => {
 
           {/*---------------- bottom area -------------- */}
 
-          <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 p-3">
-            <div className="flex-1 flex items-center bg-gray-100/12 px-3 rounded-full">
-              <input onChange={(e)=> setInput(e.target.value)} value={input} onKeyDown={(e)=> e.key === "Enter" ? handleSendMessage(e) : null} type="text" placeholder="Send a message" className="flex-1 text-sm p-3 border-none rounded-lg outline-none text-white placeholder-gray-400"/>
+          {/*---------------- bottom area -------------- */}
+
+          <div className="absolute bottom-0 left-0 right-0 flex flex-col gap-2 p-3 bg-gradient-to-t from-[#EDE0D4] to-transparent">
+            <SmartReplyButton 
+                selectedUserId={selectedUser._id} 
+                onSelectSuggestion={(suggestion) => setInput(suggestion)} 
+            />
+            <div className="w-full flex items-center bg-[#E3D5CA] px-3 rounded-full border border-[#C2A58B]">
+              <input onChange={(e)=> setInput(e.target.value)} value={input} onKeyDown={(e)=> e.key === "Enter" ? handleSendMessage(e) : null} type="text" placeholder="Send a message" className="flex-1 text-sm p-3 border-none rounded-lg outline-none text-[#3C1F0D] placeholder-[#8C7B6E] bg-transparent"/>
               <input onChange={handleSendImage} type="file" id="image" accept="image/png, image/jpg" hidden/>
               <label htmlFor="image">
                 <img src={assets.gallery_icon} alt="" className="w-5 mr-2 cursor-pointer"/>
@@ -171,26 +212,25 @@ const ChatContainer = () => {
           </div>
         </div>
     ) : (
-      
-      <div className="flex flex-col items-center justify-center gap-2 text-gray-500 bg-white/10 max-md:hidden">
-        <img src={assets.logo_icon} alt="" className="max-w-16" />
-        <p className="text-lg font-medium text-white">Chat anytime, anywhere</p>
+      <div className="flex flex-col items-center justify-center gap-4 text-[#8C7B6E] bg-[#EDE0D4] max-md:hidden">
+        <img src={assets.logo_icon} alt="" className="max-w-40" />
+        <p className="text-xl font-medium text-[#3C1F0D]">Chat anytime, anywhere</p>
       </div>
     )}
 
     {/* INCOMING CALL */}
           {call?.isReceivingCall && !callAccepted && !callEnded && (
-            <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-white z-50">
+            <div className="absolute inset-0 bg-[#3C1F0D]/95 flex flex-col items-center justify-center text-[#F5EFE6] z-50">
               
               <img
                 src={selectedUser?.profilePic || assets.avatar_icon}
-                className="w-24 h-24 rounded-full mb-4"
+                className={`w-24 h-24 rounded-full mb-4 ${!selectedUser?.profilePic && 'sepia opacity-70'}`}
               />
 
               <h2 className="text-xl font-semibold">
                 {call?.name || "Incoming Call"}
               </h2>
-              <p className="text-gray-400 mt-2">Incoming Call...</p>
+              <p className="text-[#C2A58B] mt-2">Incoming Call...</p>
 
               <div className="flex gap-4 mt-6">
                 <button
@@ -212,15 +252,15 @@ const ChatContainer = () => {
 
           {/* OUTGOING CALL */}
           {call?.isCalling && !callAccepted && !call?.isReceivingCall && (
-            <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-white z-50">
+            <div className="absolute inset-0 bg-[#3C1F0D]/95 flex flex-col items-center justify-center text-[#F5EFE6] z-50">
               
               <img
                 src={selectedUser?.profilePic || assets.avatar_icon}
-                className="w-24 h-24 rounded-full mb-4"
+                className={`w-24 h-24 rounded-full mb-4 ${!selectedUser?.profilePic && 'sepia opacity-70'}`}
               />
 
               <h2 className="text-xl font-semibold">{selectedUser?.fullName}</h2>
-              <p className="text-gray-400 mt-2">Calling...</p>
+              <p className="text-[#C2A58B] mt-2">Calling...</p>
 
               <button
                 onClick={endCall}
@@ -233,7 +273,7 @@ const ChatContainer = () => {
 
           {/* CALL CONNECTED */}
           {callAccepted && !callEnded && (
-            <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-white z-50">
+            <div className="absolute inset-0 bg-[#3C1F0D]/95 flex flex-col items-center justify-center text-[#F5EFE6] z-50">
               
               <img
                 src={
@@ -241,7 +281,7 @@ const ChatContainer = () => {
                     ? selectedUser?.profilePic
                     : assets.avatar_icon
                 }
-                className="w-24 h-24 rounded-full mb-4"
+                className={`w-24 h-24 rounded-full mb-4 ${!(selectedUser?._id === call?.from && selectedUser?.profilePic) && 'sepia opacity-70'}`}
               />
 
               <h2 className="text-xl font-semibold">{call?.name || selectedUser?.fullName}</h2>

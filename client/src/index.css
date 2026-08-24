@@ -7,6 +7,39 @@
   font-family: "Outfit", sans-serif;
 }
 
-::-webkit-scrollbar{
-  display: none;
+:root {
+  --coffee-bg: #F5EFE6;
+  --coffee-panel: #EDE0D4;
+  --coffee-sidebar: #D5BDAF;
+  --coffee-input: #E3D5CA;
+  --coffee-accent: #7B4F35;
+  --coffee-accent-light: #B07D57;
+  --coffee-border: #C2A58B;
+  --coffee-text: #3C1F0D;
+  --coffee-text-muted: #8C7B6E;
+  --coffee-sent: #C4875A;
+  --coffee-received: #EDE0D4;
+}
+
+body {
+  background-color: var(--coffee-bg);
+  color: var(--coffee-text);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--coffee-panel); 
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--coffee-border); 
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--coffee-accent-light); 
 }

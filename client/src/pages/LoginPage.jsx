@@ -130,7 +130,7 @@ const LoginPage = () => {
 
       <form
         onSubmit={onSubmitHandler}
-        className="border-2 bg-white/8 text-white border-gray-500 p-6 flex flex-col rounded-lg shadow-lg w-1/3"
+        className="border-2 bg-[#EDE0D4] text-[#3C1F0D] border-[#C2A58B] p-6 flex flex-col rounded-lg shadow-lg w-1/3"
       >
         <h2 className="font-medium text-2xl flex justify-between items-center">
           {currState}
@@ -154,7 +154,7 @@ const LoginPage = () => {
             type="text"
             placeholder="Full Name"
             required
-            className="p-2 border border-gray-500 rounded-md"
+            className="p-2 border border-[#C2A58B] bg-[#F5EFE6] rounded-md"
           />
         )}
 
@@ -169,7 +169,7 @@ const LoginPage = () => {
               type="email"
               placeholder="Email Address"
               required
-              className="p-2 border border-gray-500 rounded-md"
+              className="p-2 border border-[#C2A58B] bg-[#F5EFE6] rounded-md"
             />
             <br />
 
@@ -180,7 +180,7 @@ const LoginPage = () => {
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 required
-                className="p-2 border border-gray-500 rounded-md w-full pr-10"
+                className="p-2 border border-[#C2A58B] bg-[#F5EFE6] rounded-md w-full pr-10"
               />
               <span
                 onClick={() => setShowPassword(!showPassword)}
@@ -200,7 +200,7 @@ const LoginPage = () => {
               placeholder="Enter your email"
               onChange={(e)=>setEmail(e.target.value)}
               value={email}
-              className='p-2 border border-gray-500 rounded-md'
+              className='p-2 border border-[#C2A58B] bg-[#F5EFE6] rounded-md'
               required
             />
             <br />
@@ -210,7 +210,7 @@ const LoginPage = () => {
               placeholder="New Password"
               onChange={(e)=>setPassword(e.target.value)}
               value={password}
-              className='p-2 border border-gray-500 rounded-md'
+              className='p-2 border border-[#C2A58B] bg-[#F5EFE6] rounded-md'
               required
             />
             <br />
@@ -220,7 +220,7 @@ const LoginPage = () => {
               placeholder="Confirm Password"
               onChange={(e)=>setConfirmPassword(e.target.value)}
               value={confirmPassword}
-              className='p-2 border border-gray-500 rounded-md'
+              className='p-2 border border-[#C2A58B] bg-[#F5EFE6] rounded-md'
               required
             />
           </>
@@ -233,7 +233,7 @@ const LoginPage = () => {
               placeholder="Enter your email"
               onChange={(e) => setEmail(e.target.value)}
               value={email}
-              className="p-2 border border-gray-500 rounded-md"
+              className="p-2 border border-[#C2A58B] bg-[#F5EFE6] rounded-md"
               required
             />
           </>
@@ -246,7 +246,7 @@ const LoginPage = () => {
               placeholder="Enter OTP"
               onChange={(e) => setOtp(e.target.value)}
               value={otp}
-              className="p-2 border border-gray-500 rounded-md"
+              className="p-2 border border-[#C2A58B] bg-[#F5EFE6] rounded-md"
               required
             />
             <br />
@@ -257,7 +257,7 @@ const LoginPage = () => {
                 placeholder="New Password"
                 onChange={(e) => setPassword(e.target.value)}
                 value={password}
-                className="p-2 border border-gray-500 rounded-md w-full pr-10"
+                className="p-2 border border-[#C2A58B] bg-[#F5EFE6] rounded-md w-full pr-10"
                 required
               />
               <span
@@ -275,7 +275,7 @@ const LoginPage = () => {
                 placeholder="Confirm Password"
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 value={confirmPassword}
-                className="p-2 border border-gray-500 rounded-md w-full pr-10"
+                className="p-2 border border-[#C2A58B] bg-[#F5EFE6] rounded-md w-full pr-10"
                 required
               />
               <span
@@ -299,7 +299,7 @@ const LoginPage = () => {
             rows={4}
             placeholder="provide a short bio..."
             required
-            className="p-2 border border-gray-500 rounded-md"
+            className="p-2 border border-[#C2A58B] bg-[#F5EFE6] rounded-md"
           ></textarea>
         )}
 
@@ -312,7 +312,7 @@ const LoginPage = () => {
               setCurrState("Forgot");
               setIsDataSubmitted(false);
             }}
-            className="text-sm text-blue-400 cursor-pointer mb-4"
+            className="text-sm text-[#B07D57] cursor-pointer mb-4"
           >
             Forgot Password?
           </p>
@@ -325,8 +325,8 @@ const LoginPage = () => {
           }
           className={`py-3 rounded-md text-white transition ${
             loading
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-gradient-to-r from-purple-400 to-violet-600"
+              ? "bg-[#C2A58B] cursor-not-allowed"
+              : "bg-gradient-to-r from-[#7B4F35] to-[#B07D57]"
           } ${timer > 0 ? "opacity-70 cursor-not-allowed" : ""}`}
         >
           {loading
@@ -345,7 +345,7 @@ const LoginPage = () => {
         <br />
 
         {/* Bottom Toggle */}
-        <div className="flex flex-col gap-2 text-sm text-gray-600">
+        <div className="flex flex-col gap-2 text-sm text-[#8C7B6E]">
           {currState === "Sign Up" ? (
             <p>
               Already have an account?
@@ -354,7 +354,7 @@ const LoginPage = () => {
                   setCurrState("Login");
                   setIsDataSubmitted(false);
                 }}
-                className="text-violet-500 cursor-pointer"
+                className="text-[#7B4F35] cursor-pointer"
               >
                 {" "}
                 Login here
@@ -365,7 +365,7 @@ const LoginPage = () => {
               Create an account
               <span
                 onClick={() => setCurrState("Sign Up")}
-                className="text-violet-500 cursor-pointer"
+                className="text-[#7B4F35] cursor-pointer"
               >
                 {" "}
                 Click here
@@ -376,7 +376,7 @@ const LoginPage = () => {
               Back to login?
               <span
                 onClick={() => setCurrState("Login")}
-                className="text-violet-500 cursor-pointer"
+                className="text-[#7B4F35] cursor-pointer"
               >
                 {" "}
                 Click here
